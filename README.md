@@ -8,10 +8,9 @@
    `mysql -u root -p`) y ejecuta:
 
    ```sql
-   CREATE DATABASE bajo_la_sombrilla CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   CREATE USER 'sombrilla'@'localhost' IDENTIFIED BY 'pon-aqui-una-clave-segura';
-   GRANT ALL PRIVILEGES ON bajo_la_sombrilla.* TO 'sombrilla'@'localhost';
-   FLUSH PRIVILEGES;
+   CREATE DATABASE bajo_la_sombrilla;
+   CREATE USER sombrilla WITH ENCRYPTED PASSWORD 'pon-aqui-una-clave-segura';
+   GRANT ALL PRIVILEGES ON DATABASE bajo_la_sombrilla TO sombrilla;
    ```
 
    Las **tablas se crean solas** cuando arranca el servidor (están definidas en `schema.sql`).
@@ -81,11 +80,11 @@ así que también puedes abrir todo desde `http://localhost:3000`.
 En desarrollo se crean tres cuentas de demostración (solo si no existe ninguna
 profesional):
 
-| Correo | Contraseña | Especialidad |
-|---|---|---|
-| `psicologa@bajolasombrilla.org` | `Profesional2026*` | Psicología clínica |
-| `trabajadora.social@bajolasombrilla.org` | `Profesional2026*` | Trabajo social |
-| `abogada@bajolasombrilla.org` | `Profesional2026*` | Orientación jurídica |
+| Correo                                   | Contraseña         | Especialidad         |
+| ---------------------------------------- | ------------------ | -------------------- |
+| `psicologa@bajolasombrilla.org`          | `Profesional2026*` | Psicología clínica   |
+| `trabajadora.social@bajolasombrilla.org` | `Profesional2026*` | Trabajo social       |
+| `abogada@bajolasombrilla.org`            | `Profesional2026*` | Orientación jurídica |
 
 Puedes cambiarlas con `PROF_EMAIL` y `PROF_PASSWORD` en `.env`. En producción no
 se crean cuentas de demostración: la administración las crea desde su panel.
@@ -107,24 +106,24 @@ la tabla `servicios_mapa`.
 
 ## Tablas
 
-| Tabla | Para qué sirve |
-|---|---|
-| `usuarias` | Cuentas (rol `usuaria`, `profesional` o `admin`), contraseña con bcrypt |
-| `testimonios` | Testimonios (`pendiente`, `aprobado`, `rechazado`) |
-| `areas` + `testimonio_areas` | Áreas de interés de cada testimonio |
-| `solicitudes` | Solicitudes de orientación (`nueva`, `atendida`) |
-| `motivos` + `solicitud_motivos` | Motivos de cada solicitud |
-| `perfiles_profesionales` | Especialidad, descripción y estado de cada profesional |
-| `disponibilidad` | Días y horas de atención de cada profesional |
-| `citas` | Citas (`pendiente`, `confirmada`, `completada`, `cancelada`) |
-| `mensajes` | Mensajería interna usuaria ↔ profesional |
-| `diario_emocional` | Una entrada por día: ánimo, emociones y nota |
-| `tests_bienestar` | Puntaje, nivel y riesgo de cada test |
-| `alertas` | Alertas de riesgo para el equipo profesional |
-| `lineas_ayuda` | Líneas de atención y emergencia |
-| `servicios_mapa` | Servicios y coordenadas del mapa |
-| `accesos` | Registro de ingresos para calcular actividad y deserción |
-| `logros_laborales` | Empleos conseguidos (indicador del dashboard) |
+| Tabla                           | Para qué sirve                                                          |
+| ------------------------------- | ----------------------------------------------------------------------- |
+| `usuarias`                      | Cuentas (rol `usuaria`, `profesional` o `admin`), contraseña con bcrypt |
+| `testimonios`                   | Testimonios (`pendiente`, `aprobado`, `rechazado`)                      |
+| `areas` + `testimonio_areas`    | Áreas de interés de cada testimonio                                     |
+| `solicitudes`                   | Solicitudes de orientación (`nueva`, `atendida`)                        |
+| `motivos` + `solicitud_motivos` | Motivos de cada solicitud                                               |
+| `perfiles_profesionales`        | Especialidad, descripción y estado de cada profesional                  |
+| `disponibilidad`                | Días y horas de atención de cada profesional                            |
+| `citas`                         | Citas (`pendiente`, `confirmada`, `completada`, `cancelada`)            |
+| `mensajes`                      | Mensajería interna usuaria ↔ profesional                                |
+| `diario_emocional`              | Una entrada por día: ánimo, emociones y nota                            |
+| `tests_bienestar`               | Puntaje, nivel y riesgo de cada test                                    |
+| `alertas`                       | Alertas de riesgo para el equipo profesional                            |
+| `lineas_ayuda`                  | Líneas de atención y emergencia                                         |
+| `servicios_mapa`                | Servicios y coordenadas del mapa                                        |
+| `accesos`                       | Registro de ingresos para calcular actividad y deserción                |
+| `logros_laborales`              | Empleos conseguidos (indicador del dashboard)                           |
 
 Las fechas de creación se guardan en UTC. Las citas y el diario se manejan en
 hora de Colombia (UTC-5) para que los horarios coincidan con la vida real.

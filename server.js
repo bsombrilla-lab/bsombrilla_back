@@ -123,9 +123,11 @@ async function prepararProfesionales() {
 // CONFIGURACIÓN GENERAL
 // ------------------------------------------
 const app = express();
+const origenPermitido = process.env.FRONTEND_URL || "http://127.0.0.1:5500";
+
 app.use(
   cors({
-    origin: ["http://127.0.0.1:5500", "http://localhost:5500"],
+    origin: [origenPermitido, "http://localhost:5500"],
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
     credentials: true,
   }),
@@ -458,7 +460,11 @@ const exigirAdmin = (req, res, next) => {
 const exigirProfesional = (req, res, next) => {
   if (!req.usuaria) return falla(res, 401, "Inicia sesión para continuar.");
   if (req.usuaria.rol !== "profesional")
-    return falla(res, 403, "Esta cuenta no tiene permisos de acompañamiento profesional.");
+    return falla(
+      res,
+      403,
+      "Esta cuenta no tiene permisos de acompañamiento profesional.",
+    );
   next();
 };
 
@@ -793,8 +799,7 @@ app.get(
   ruta(async (req, res) => {
     if (req.usuaria.rol === "profesional")
       return res.json(await db.citasDeProfesional(req.usuaria.id));
-    if (req.usuaria.rol === "admin")
-      return res.json(await db.todasLasCitas());
+    if (req.usuaria.rol === "admin") return res.json(await db.todasLasCitas());
     res.json(await db.citasDeUsuaria(req.usuaria.id));
   }),
 );
@@ -817,13 +822,19 @@ app.post(
       return falla(res, 400, "Revisa la profesional, la fecha y la modalidad.");
 
     if (motivo.length > 500)
-      return falla(res, 400, "El motivo es demasiado largo (máximo 500 caracteres).");
+      return falla(
+        res,
+        400,
+        "El motivo es demasiado largo (máximo 500 caracteres).",
+      );
 
     const profesional = await db.profesionalPorId(profesionalId);
     if (!profesional || !profesional.activo)
       return falla(res, 404, "No encontramos esa profesional disponible.");
 
-    if (fechaHora <= ahoraColombia().toISOString().slice(0, 19).replace("T", " "))
+    if (
+      fechaHora <= ahoraColombia().toISOString().slice(0, 19).replace("T", " ")
+    )
       return falla(res, 400, "Elige una fecha y hora futuras.");
 
     // El cupo debe pertenecer a un horario de atención de la profesional
@@ -845,7 +856,11 @@ app.post(
     });
 
     if (!dentroDeHorario)
-      return falla(res, 400, "Ese horario no está disponible para la profesional.");
+      return falla(
+        res,
+        400,
+        "Ese horario no está disponible para la profesional.",
+      );
 
     if (await db.hayConflictoCita(profesionalId, fechaHora))
       return falla(res, 409, "Ese horario acaba de ser ocupado. Elige otro.");
@@ -921,7 +936,10 @@ app.get(
     const profesional = await db.profesionalPorId(profesionalId);
     if (!profesional) return falla(res, 404, "No encontramos esa profesional.");
 
-    const mensajes = await db.mensajesConversacion(req.usuaria.id, profesionalId);
+    const mensajes = await db.mensajesConversacion(
+      req.usuaria.id,
+      profesionalId,
+    );
     await db.marcarMensajesLeidos(req.usuaria.id, profesionalId, "usuaria");
 
     res.json({ profesional, mensajes });
@@ -943,7 +961,11 @@ app.post(
     if (!profesionalId || !contenido)
       return falla(res, 400, "Escribe un mensaje y elige una profesional.");
     if (contenido.length > 2000)
-      return falla(res, 400, "El mensaje es demasiado largo (máximo 2000 caracteres).");
+      return falla(
+        res,
+        400,
+        "El mensaje es demasiado largo (máximo 2000 caracteres).",
+      );
 
     const profesional = await db.profesionalPorId(profesionalId);
     if (!profesional || !profesional.activo)
@@ -993,7 +1015,11 @@ app.post(
     if (!Number.isInteger(animo) || animo < 1 || animo > 10)
       return falla(res, 400, "Elige un estado de ánimo entre 1 y 10.");
     if (nota.length > 1000)
-      return falla(res, 400, "La nota es demasiado larga (máximo 1000 caracteres).");
+      return falla(
+        res,
+        400,
+        "La nota es demasiado larga (máximo 1000 caracteres).",
+      );
 
     const entrada = await db.guardarDiario({
       usuariaId: req.usuaria.id,
@@ -1086,7 +1112,9 @@ prof.use(exigirProfesional);
 
 prof.get(
   "/citas",
-  ruta(async (req, res) => res.json(await db.citasDeProfesional(req.usuaria.id))),
+  ruta(async (req, res) =>
+    res.json(await db.citasDeProfesional(req.usuaria.id)),
+  ),
 );
 
 prof.patch(
@@ -1149,7 +1177,11 @@ prof.post(
     if (!usuariaId || !contenido)
       return falla(res, 400, "Escribe un mensaje y elige una usuaria.");
     if (contenido.length > 2000)
-      return falla(res, 400, "El mensaje es demasiado largo (máximo 2000 caracteres).");
+      return falla(
+        res,
+        400,
+        "El mensaje es demasiado largo (máximo 2000 caracteres).",
+      );
 
     const usuaria = await db.usuariaPorId(usuariaId);
     if (!usuaria || usuaria.rol !== "usuaria")
@@ -1193,7 +1225,9 @@ prof.get(
 prof.put(
   "/disponibilidad",
   ruta(async (req, res) => {
-    const rangos = Array.isArray(req.body.rangos) ? req.body.rangos.slice(0, 21) : [];
+    const rangos = Array.isArray(req.body.rangos)
+      ? req.body.rangos.slice(0, 21)
+      : [];
     const limpios = [];
 
     for (const r of rangos) {
@@ -1202,11 +1236,19 @@ prof.put(
       const fin = horaTexto(r.hora_fin);
 
       if (!Number.isInteger(dia) || dia < 0 || dia > 6 || !inicio || !fin)
-        return falla(res, 400, "Revisa los días y las horas de disponibilidad.");
+        return falla(
+          res,
+          400,
+          "Revisa los días y las horas de disponibilidad.",
+        );
       if (fin <= inicio)
         return falla(res, 400, "La hora final debe ser mayor que la inicial.");
 
-      limpios.push({ dia_semana: dia, hora_inicio: inicio + ":00", hora_fin: fin + ":00" });
+      limpios.push({
+        dia_semana: dia,
+        hora_inicio: inicio + ":00",
+        hora_fin: fin + ":00",
+      });
     }
 
     await db.reemplazarDisponibilidad(req.usuaria.id, limpios);
@@ -1417,15 +1459,31 @@ admin.post(
     const descripcion = texto(req.body.descripcion);
 
     if (!nombre || nombre.length > 80)
-      return falla(res, 400, "Escribe el nombre de la profesional (máximo 80 caracteres).");
+      return falla(
+        res,
+        400,
+        "Escribe el nombre de la profesional (máximo 80 caracteres).",
+      );
     if (!emailValido(email))
       return falla(res, 400, "Escribe un correo electrónico válido.");
     if (typeof clave !== "string" || clave.length < 10)
-      return falla(res, 400, "La contraseña debe tener al menos 10 caracteres.");
+      return falla(
+        res,
+        400,
+        "La contraseña debe tener al menos 10 caracteres.",
+      );
     if (!claveValida(clave))
-      return falla(res, 400, "La contraseña es demasiado larga (máximo 72 caracteres).");
+      return falla(
+        res,
+        400,
+        "La contraseña es demasiado larga (máximo 72 caracteres).",
+      );
     if (!especialidad || especialidad.length > 120)
-      return falla(res, 400, "Escribe la especialidad (máximo 120 caracteres).");
+      return falla(
+        res,
+        400,
+        "Escribe la especialidad (máximo 120 caracteres).",
+      );
     if (descripcion.length > 1000)
       return falla(res, 400, "La descripción es demasiado larga.");
 
@@ -1460,12 +1518,18 @@ admin.patch(
         ? texto(req.body.descripcion)
         : actual.descripcion;
     const activo =
-      typeof req.body.activo === "boolean" ? req.body.activo : Boolean(actual.activo);
+      typeof req.body.activo === "boolean"
+        ? req.body.activo
+        : Boolean(actual.activo);
 
     if (especialidad.length > 120 || descripcion.length > 1000)
       return falla(res, 400, "Alguno de los textos es demasiado largo.");
 
-    await db.actualizarPerfilProfesional(id, { especialidad, descripcion, activo });
+    await db.actualizarPerfilProfesional(id, {
+      especialidad,
+      descripcion,
+      activo,
+    });
     res.json({ ok: true });
   }),
 );
@@ -1551,7 +1615,10 @@ admin.get(
         { header: "Valor", key: "valor", width: 24 },
       ],
       [
-        { indicador: "Fecha de generación", valor: new Date().toLocaleString("es-CO") },
+        {
+          indicador: "Fecha de generación",
+          valor: new Date().toLocaleString("es-CO"),
+        },
         { indicador: "Usuarias registradas", valor: e.totalUsuarias },
         { indicador: "Usuarias activas (30 días)", valor: e.usuariasActivas },
         { indicador: "Usuarias inactivas", valor: e.usuariasInactivas },
@@ -1565,7 +1632,10 @@ admin.get(
         { indicador: "Tests realizados", valor: e.testsTotal },
         { indicador: "Tests con indicador de riesgo", valor: e.testsRiesgo },
         { indicador: "Alertas pendientes", valor: e.alertasPendientes },
-        { indicador: "Promedio de ánimo (30 días)", valor: e.promedioAnimo ?? "Sin datos" },
+        {
+          indicador: "Promedio de ánimo (30 días)",
+          valor: e.promedioAnimo ?? "Sin datos",
+        },
         { indicador: "Entradas del diario", valor: e.entradasDiario },
         { indicador: "Mensajes enviados", valor: e.mensajesTotal },
         { indicador: "Solicitudes nuevas", valor: e.solicitudesNuevas },
@@ -1668,7 +1738,9 @@ admin.get(
       usuarias.map((u) => ({
         nombre: u.nombre,
         email: u.email,
-        registro: String(u.creado_en || "").replace("T", " ").slice(0, 19),
+        registro: String(u.creado_en || "")
+          .replace("T", " ")
+          .slice(0, 19),
         ultimo: u.ultimo_acceso
           ? String(u.ultimo_acceso).replace("T", " ").slice(0, 19)
           : "Sin registro",
@@ -1753,8 +1825,12 @@ admin.get(
     doc.font("Helvetica-Bold").fontSize(22).fillColor(morado);
     doc.text("BAJO LA SOMBRILLA", { align: "center" });
     doc.font("Helvetica").fontSize(10).fillColor(tinta);
-    doc.text("Reporte de acompañamiento psicosocial y programa", { align: "center" });
-    doc.text("Generado: " + new Date().toLocaleString("es-CO"), { align: "center" });
+    doc.text("Reporte de acompañamiento psicosocial y programa", {
+      align: "center",
+    });
+    doc.text("Generado: " + new Date().toLocaleString("es-CO"), {
+      align: "center",
+    });
     doc.moveDown(1.2);
 
     doc.font("Helvetica-Bold").fontSize(14).fillColor(morado);
@@ -1809,7 +1885,11 @@ admin.get(
         doc.text(`${c.mes} · ${c.estado}: ${c.total}`);
       });
     } else {
-      doc.font("Helvetica").fontSize(10).fillColor(tinta).text("Sin citas registradas.");
+      doc
+        .font("Helvetica")
+        .fontSize(10)
+        .fillColor(tinta)
+        .text("Sin citas registradas.");
     }
 
     doc.moveDown(0.8);
@@ -1825,7 +1905,11 @@ admin.get(
         );
       });
     } else {
-      doc.font("Helvetica").fontSize(10).fillColor(tinta).text("Sin tests registrados.");
+      doc
+        .font("Helvetica")
+        .fontSize(10)
+        .fillColor(tinta)
+        .text("Sin tests registrados.");
     }
 
     doc.moveDown(0.8);
@@ -1837,13 +1921,19 @@ admin.get(
       pendientes.slice(0, 15).forEach((a) => {
         if (doc.y > 760) doc.addPage();
         doc.font("Helvetica-Bold").fontSize(9).fillColor(naranja);
-        doc.text(`${String(a.creado_en).slice(0, 10)} · ${a.usuaria} · ${a.nivel.toUpperCase()}`);
+        doc.text(
+          `${String(a.creado_en).slice(0, 10)} · ${a.usuaria} · ${a.nivel.toUpperCase()}`,
+        );
         doc.font("Helvetica").fontSize(9).fillColor(tinta);
         doc.text(a.descripcion, { width: 500 });
         doc.moveDown(0.35);
       });
     } else {
-      doc.font("Helvetica").fontSize(10).fillColor(tinta).text("No hay alertas pendientes.");
+      doc
+        .font("Helvetica")
+        .fontSize(10)
+        .fillColor(tinta)
+        .text("No hay alertas pendientes.");
     }
 
     doc.moveDown(0.8);
@@ -1854,10 +1944,16 @@ admin.get(
       logros.slice(0, 25).forEach((l) => {
         if (doc.y > 760) doc.addPage();
         doc.font("Helvetica").fontSize(9).fillColor(tinta);
-        doc.text(`${l.fecha} · ${l.usuaria} · ${l.empresa}${l.cargo ? " · " + l.cargo : ""}`);
+        doc.text(
+          `${l.fecha} · ${l.usuaria} · ${l.empresa}${l.cargo ? " · " + l.cargo : ""}`,
+        );
       });
     } else {
-      doc.font("Helvetica").fontSize(10).fillColor(tinta).text("Sin logros registrados.");
+      doc
+        .font("Helvetica")
+        .fontSize(10)
+        .fillColor(tinta)
+        .text("Sin logros registrados.");
     }
 
     const rango = doc.bufferedPageRange();
