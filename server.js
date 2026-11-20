@@ -564,7 +564,7 @@ const emitirSesion = (res, u) => {
 
   res.cookie("token", token, {
     httpOnly: true, // JavaScript del navegador no puede leerla
-    sameSite: "lax", // protege contra peticiones desde otros sitios
+    sameSite: "none", // protege contra peticiones desde otros sitios
     secure: PRODUCCION, // solo por HTTPS cuando está publicado
     maxAge: duracion * 1000,
   });
